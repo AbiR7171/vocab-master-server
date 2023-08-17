@@ -34,7 +34,10 @@ async function run() {
     await client.connect();
 
 
+   const wordCollection = client.db("vocab-master").collection("word")
 
+
+   
 
 
     // Send a ping to confirm a successful connection
