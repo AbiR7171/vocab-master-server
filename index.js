@@ -1,10 +1,15 @@
 const express = require("express")
 const cors = require("cors")
 const dotenv = require('dotenv')
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const app = express()
 const port = process.env.PORT || 5000;
 require('dotenv').config()
+
+
+
+app.use(cors())
+app.use(express.json())
 
 
 app.get("/", (req,res)=>{
@@ -35,6 +40,147 @@ async function run() {
 
 
    const wordCollection = client.db("vocab-master").collection("word")
+   const lessonCollection = client.db("vocab-master").collection("quizs")
+   const usersCollection = client.db("vocab-master").collection("users")
+
+
+
+   const verifyAdmin = async(req, res, next)=>{
+
+           const email = req.decoded.email;
+
+           console.log(req.decoded);
+
+           const query = {email : email};
+           const user = await usersCollection.findOne(query)
+
+           if(user?.role !== "admin"){
+              return res.status(403).send({error:true, message: "forbidden message"})
+           };
+
+           next()
+   }
+
+
+   app.get("/words", async(req, res)=>{
+
+    const result = await wordCollection.find().toArray()
+    res.send(result)
+    
+   })
+
+   app.get("/quiz", async(req, res)=>{
+
+            const result = await lessonCollection.find().toArray();
+            res.send(result)
+   })
+
+
+   app.get("/lesson/category/TeaStall", async(req, res)=>{
+           
+               const query = {category : "Tea stall"};
+               const result = await lessonCollection.find(query).toArray();
+               res.send(result)
+
+   })
+
+
+   app.post("/users", async(req, res)=>{
+
+              const user = req.body;
+
+              // console.log(user);
+              const result = await usersCollection.insertOne(user);
+              res.send(result)
+              
+   })
+
+   app.get("/users", async(req, res)=>{
+
+          const result = await usersCollection.find().toArray()
+          res.send(result)
+   })
+
+
+   app.get("/singleUser/users", async(req, res)=>{
+
+          const email = req.query.email;
+          console.log(email);
+          const query =  {email : email};
+          const result = await usersCollection.find(query).toArray();
+          res.send(result)
+   })
+
+   app.patch("/singleUser/users", async(req, res)=>{
+
+       const email = req.query.email;
+       console.log(email);
+       const query = { email : email};
+       
+        const data = req.body;
+        console.log(data.diamond);
+        
+        const updateDoc = {
+                
+            $set:{
+                diamond : data.diamond + 1
+            }
+        }
+
+        const result = await usersCollection.updateOne(query, updateDoc)
+        res.send(result)
+   })
+
+
+
+   app.get("/singleUser/users/admin",  async(req, res)=>{
+            
+               const email = req.query.email;
+
+               const query = {email : email};
+
+               const user = await usersCollection.findOne(query)
+               
+               const result = {admin : user?.role == "admin"}
+
+               res.send(result)
+   })
+
+
+   app.patch("/singleUser/users/admin/:id", async(req, res)=>{
+
+             const id =req.params.id;
+
+             console.log(id);
+             const query = {_id: new ObjectId(id)};
+
+             const updateDoc = {
+               $set :{
+                 role : "admin"
+               }
+             }
+
+             const result = await usersCollection.updateOne( query, updateDoc)
+
+             res.send(result)
+
+   })
+
+
+
+   app.delete("/singleUser/users/:id", async(req, res)=>{
+
+           const id = req.params.id;
+           const query = {_id : new ObjectId(id)};
+           const result = await usersCollection.deleteOne(query)
+
+           res.send(result)
+   })
+
+
+   
+
+   
 
 
    
